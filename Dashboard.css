@@ -1,0 +1,212 @@
+--- START OF FILE Dashboard.css ---
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
+  body {
+    font-family: 'Poppins', sans-serif;
+    background-color: #f4f6f9; /* Light background */
+    color: #333;
+    line-height: 1.6;
+  }
+
+  .dashboard-container {
+    padding-top: 25px;
+    padding-bottom: 25px;
+  }
+
+  .header-banner {
+    background-color: #0056b3; /* Primary blue from screenshot */
+    border-radius: 8px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    color: white; /* Ensure text is white */
+  }
+
+  .header-banner h1 {
+    font-weight: 600;
+    font-size: 1.8rem; /* Adjusted for better fit */
+    margin: 0;
+  }
+  .header-banner span {
+      font-size: 0.9rem;
+  }
+
+  /* Card Styling */
+  .card {
+    border: 1px solid #e0e0e0; /* Subtle border */
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04); /* Lighter shadow */
+    background-color: #fff;
+  }
+
+  .card-header {
+    background-color: #f8f9fa; /* Light grey header */
+    border-bottom: 1px solid #e9ecef;
+    font-weight: 600; /* Slightly bolder */
+    padding: 1rem 1.25rem;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    color: #333; /* Ensure header text is dark */
+    font-size: 1.1rem;
+  }
+
+  .control-panel .card-header {
+    background-color: #343a40 !important; /* Dark header for control panel */
+    color: #fff !important;
+  }
+
+  /* KPI Cards - Unified styling with dynamic backgrounds */
+  .kpi-card {
+    min-height: 120px;
+    display: flex;
+    flex-direction: column; /* Stack title and value */
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 15px; /* Added padding */
+    border-radius: 8px;
+    color: #fff; /* White text for all KPI cards */
+    transition: background 0.3s ease; /* Smooth background transitions */
+  }
+
+  /* Default gradients */
+  .kpi-card.bg-primary { background: linear-gradient(135deg, #007bff, #0056b3); }
+  .kpi-card.bg-dark { background: linear-gradient(135deg, #495057, #343a40); }
+  .kpi-card.bg-danger { background: linear-gradient(135deg, #dc3545, #b02a37); }
+
+  .kpi-card .card-title {
+    font-size: 0.95rem;
+    color: rgba(255, 255, 255, 0.85); /* Slightly brighter */
+    margin-bottom: 8px; /* More space */
+    font-weight: 500;
+  }
+
+  .kpi-card h2 {
+    font-size: 2.4rem; /* Larger */
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 0;
+    line-height: 1;
+  }
+  .kpi-card .card-text small {
+    color: rgba(255, 255, 255, 0.75); /* Slightly brighter */
+    font-size: 0.85rem;
+  }
+  .kpi-card #kpiYoyGrowthStatus svg {
+      color: #fff !important; /* Force white icon color */
+      width: 28px; /* Larger icon */
+      height: 28px;
+  }
+
+  /* Chart Cards */
+  .chart-card .card-body {
+    min-height: 300px; /* Ensure charts have space */
+    display: flex; /* Use flexbox for inner content */
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 1.25rem;
+  }
+  /* Ensure charts themselves take available space */
+  .chart-card .card-body > div {
+      width: 100%;
+      height: 100%; /* Important for ApexCharts to fill parent */
+  }
+
+  /* Specific styles for filter dropdowns */
+  .form-select, .form-control {
+    border-radius: 5px;
+    border-color: #ced4da;
+    font-size: 0.95rem;
+    padding: 0.6rem 0.75rem;
+  }
+  .form-label {
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: #555;
+      margin-bottom: 5px;
+  }
+
+  /* Recommendations Card */
+  .recommendations-card .card-header {
+    background-color: #ffc107 !important; /* Warning yellow */
+    color: #333 !important;
+    font-weight: 600;
+  }
+
+  .recommendations-card .list-group-item {
+    border: none;
+    padding-left: 0;
+    font-size: 0.95rem;
+    color: #444;
+  }
+  .recommendations-card ul {
+    list-style: disc;
+    padding-left: 20px;
+    margin-bottom: 0;
+  }
+  .recommendations-card ul li {
+    margin-bottom: 8px;
+  }
+
+  /* Table Styling */
+  .table {
+    font-size: 0.85rem;
+    margin-bottom: 0; /* Remove default table margin */
+  }
+  .table th, .table td {
+    padding: 0.8rem;
+    vertical-align: middle;
+  }
+  .table thead th {
+    background-color: #e9ecef;
+    color: #495057;
+    border-bottom: 2px solid #dee2e6;
+  }
+
+  /* Flex for chart body to manage inner elements */
+  .chart-card .card-body.d-flex {
+      padding: 1.25rem;
+  }
+
+  /* Responsive Adjustments */
+  @media (max-width: 991.98px) {
+    .header-banner h1 {
+        font-size: 1.5rem;
+    }
+    .kpi-card h2 {
+        font-size: 2rem;
+    }
+    .chart-card .card-body {
+        min-height: 250px; /* Slightly reduce min-height on smaller screens */
+    }
+    /* Ensure table in underperforming centers gets scrolling if needed */
+    .table-responsive {
+        max-height: 250px; /* Limit height of table, enable scroll */
+        overflow-y: auto;
+    }
+  }
+
+  @media (max-width: 767.98px) {
+    .dashboard-container {
+      padding-left: 10px;
+      padding-right: 10px;
+    }
+    .header-banner {
+        flex-direction: column;
+        text-align: center;
+        padding: 15px;
+    }
+    .header-banner h1 {
+        font-size: 1.3rem;
+        margin-bottom: 5px;
+    }
+    .control-panel .card-body .row > div {
+        margin-bottom: 10px; /* Add margin between stacked filter items */
+    }
+    .col-lg-3.col-md-6.mb-3, .col-lg-6.mb-3, .col-lg-4.col-md-6.mb-3, .col-lg-4.col-md-12.mb-3, .col-12.mb-3 {
+        margin-bottom: 15px !important; /* Uniform bottom margin for all cards */
+    }
+  }
+</style>
+--- END OF FILE Dashboard.css ---

@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <title>MS-CIT Admissions Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- ApexCharts -->
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap');
+
+      :root {
+        --primary-dark: #021640;
+        --primary-blue-light: #0066CC;
+        --accent-blue-1: #4572C4;
+        --accent-blue-2: #558ED5;
+        --accent-blue-3: #1F4E79;
+        --text-dark: #333;
+        --text-light: #fff;
+        --bg-light: #f8f9fa;
+        --border-color: #e0e0e0;
+        --card-bg: #ffffff;
+      }
+
+      * { box-sizing: border-box; }
+      body { font-family: 'Roboto', sans-serif; margin: 0; background: var(--bg-light); color: var(--text-dark); }
+
+      .header {
+        background: var(--primary-dark); color: var(--text-light); text-align: center;
+        padding: 30px 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+      }
+      .header h1 { margin: 0 0 6px; font-size: 2.2rem; font-weight: 700; }
+      .header h2 { margin: 0; font-size: 1rem; font-weight: 300; opacity: 0.85; }
+
+      .container { max-width: 1400px; margin: 28px auto; padding: 0 18px; }
+
+      .control-panel {
+        background: #f0f2f5; padding: 16px; border-radius: 10px; margin-bottom: 24px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+        display: grid; grid-template-columns: repeat(auto-fit,minmax(210px,1fr)); gap: 14px;
+      }
+      .control-panel label { font-weight: 700; color: var(--primary-dark); margin-bottom: 6px; font-size: .9rem; }
+      .control-panel select, .control-panel input {
+        padding: 9px 10px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--card-bg); font-size: .92rem;
+      }
+
+      .kpi-cards {
+        display: grid; grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); gap: 18px; margin-bottom: 26px;
+      }
+      .kpi-card {
+        background: var(--card-bg); border-radius: 10px; padding: 16px;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.08); text-align: center; height: 100px;
+        display: flex; flex-direction: column; justify-content: center;
+      }
+      .kpi-card h3 { margin: 0 0 6px; font-weight: 600; color: var(--primary-dark); font-size: 1rem; }
+      .kpi-card .value { font-size: 1.7rem; font-weight: 700; color: var(--primary-blue-light); }
+
+      .section-heading {
+        font-size: 1.5rem; font-weight: 800; color: var(--primary-dark);
+        margin: 18px 0 12px; border-bottom: 2px solid var(--primary-dark); padding-bottom: 8px;
+      }
+
+      .table-container {
+        background: var(--card-bg); border-radius: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+        padding: 16px; margin-bottom: 24px; overflow-x: auto;
+      }
+      table { width: 100%; border-collapse: collapse; font-size: .92rem; }
+      th, td { border: 1px solid var(--border-color); padding: 9px; text-align: left; }
+      th { background: var(--primary-dark); color: var(--text-light); white-space: nowrap; }
+
+      .charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin-bottom: 24px; }
+      .chart-card { background: var(--card-bg); border-radius: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); padding: 16px; }
+      .chart-card h3 { margin: 0 0 10px; font-size: 1.05rem; color: var(--primary-dark); font-weight: 700; }
+      .chart-container { min-height: 300px; width: 100%; }
+
+      .recommendations-panel {
+        background: #e6f7ff; border-left: 5px solid var(--primary-blue-light);
+        padding: 16px; border-radius: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); margin-bottom: 26px;
+      }
+      .recommendations-panel h3 { margin: 0 0 10px; font-size: 1.05rem; color: var(--primary-dark); font-weight: 700; }
+      .recommendations-panel ul { margin: 0; padding-left: 18px; }
+
+      .loading-overlay {
+        position: fixed; inset: 0; background: rgba(255,255,255,0.9);
+        display: none; justify-content: center; align-items: center; z-index: 1000;
+        font-size: 1.2rem; color: var(--primary-dark); flex-direction: column;
+      }
+      .spinner {
+        border: 4px solid rgba(0,0,0,0.1); border-top: 4px solid var(--primary-blue-light);
+        border-radius: 50%; width: 38px; height: 38px; animation: spin 1s linear infinite; margin-bottom: 12px;
+      }
+      @keyframes spin { 0% { transform: rotate(0deg) } 100% { transform: rotate(360deg) } }
+
+      @media (max-width: 900px) { .charts-grid { grid-template-columns: 1fr; } }
+    </style>
+  </head>
+  <body>
+    <div class="loading-overlay" id="loadingOverlay">
+      <div class="spinner"></div>
+      Loading dashboard...
+    </div>
+
+    <div class="header">
+      <h1>ALC-BDP Admissions Dashboard</h1>
+      <h2>Program Overview & Strategic Insights</h2>
+    </div>
+
+    <div class="container">
+      <div class="control-panel">
+        <div><label for="filterYear">Filter Year</label><select id="filterYear"></select></div>
+        <div><label for="filterExamEvent">Filter Exam Event</label><select id="filterExamEvent"></select></div>
+        <div><label for="filterRlcRegion">Filter RLC Region</label><select id="filterRlcRegion"></select></div>
+        <div><label for="filterLearnerDistrict">Filter Learner District</label><select id="filterLearnerDistrict"></select></div>
+        <div><label for="filterGender">Filter Gender</label><select id="filterGender"></select></div>
+        <div><label for="filterQualification">Filter Qualification</label><select id="filterQualification"></select></div>
+        <div><label for="filterOverallTarget">Overall Target</label><input type="number" id="filterOverallTarget" placeholder="e.g. 500" min="0" /></div>
+        <div><label for="filterExamDeadline">Overall Target Deadline</label><input type="date" id="filterExamDeadline" /></div>
+        <!-- NEW FILTERS FOR EXAM EVENT PREDICTION -->
+        <div><label for="filterPredictionExamEvent">Prediction Target Exam Event</label><select id="filterPredictionExamEvent"></select></div>
+        <div><label for="filterManualTarget">Manual Exam Target</label><input type="number" id="filterManualTarget" placeholder="e.g. 150" min="0" /></div>
+      </div>
+
+      <div class="kpi-cards">
+        <div class="kpi-card"><h3>Total Admissions</h3><div class="value" id="kpiTotalAdmissions">0</div></div>
+        <div class="kpi-card"><h3>Completion Rate</h3><div class="value" id="kpiCompletionRate">0%</div></div>
+        <div class="kpi-card"><h3>Avg Internal Marks (MSBTE)</h3><div class="value" id="kpiAvgInternalMarks">—</div></div>
+        <div class="kpi-card"><h3>Avg Internal Score (Points)</h3><div class="value" id="kpiAvgInternalScore">—</div></div>
+        <div class="kpi-card"><h3>Target</h3><div class="value" id="kpiOverallTarget">—</div></div>
+        <div class="kpi-card"><h3>Predicted by Deadline</h3><div class="value" id="kpiPredictedAdmissions">—</div></div>
+      </div>
+
+      <h2 class="section-heading">Admissions Status by Center</h2>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Year</th><th>Exam Event</th><th>Center Code</th><th>Center Name</th>
+              <th>Actual Admissions</th><th>Completion %</th><th>Avg Internal Marks</th>
+              <th>Avg Internal Score</th><th>Gender Mix</th><th>Payment Status Mix</th>
+            </tr>
+          </thead>
+          <tbody id="admissionsStatusTableBody"></tbody>
+        </table>
+      </div>
+
+      <div class="charts-grid">
+        <div class="chart-card">
+          <h3>Admissions Trend by Month</h3>
+          <div id="chartAdmissionsTrend" class="chart-container"></div>
+        </div>
+        <div class="chart-card">
+          <h3>Admissions by RLC Region</h3>
+          <div id="chartAdmissionsByRlcRegion" class="chart-container"></div>
+        </div>
+      </div>
+
+      <div class="charts-grid">
+        <div class="chart-card">
+          <h3>Gender Distribution</h3>
+          <div id="chartGenderDistribution" class="chart-container"></div>
+        </div>
+        <div class="chart-card">
+          <h3>Admissions by Qualification</h3>
+          <div id="chartAdmissionsByQualification" class="chart-container"></div>
+        </div>
+      </div>
+
+      <div class="charts-grid">
+        <div class="chart-card">
+          <h3>Low-Completion Centers (&lt;90% Completion)</h3>
+          <div id="chartLowCompletionCenters" class="chart-container"></div>
+        </div>
+        <div class="chart-card">
+          <h3>Exam Event Prediction (Historical & Target)</h3>
+          <div id="chartExamEventPrediction" class="chart-container"></div>
+        </div>
+      </div>
+
+      <div class="charts-grid">
+        <div class="chart-card">
+          <h3>Admissions Heatmap (RLC × Qualification)</h3>
+          <div id="chartAdmissionsHeatmap" class="chart-container"></div>
+        </div>
+        <div class="chart-card">
+          <h3>Center Performance Bubble (Avg Score × Completion, size=Admissions)</h3>
+          <div id="chartBubbleCenters" class="chart-container"></div>
+        </div>
+      </div>
+
+      <div class="recommendations-panel">
+        <h3>Action Recommendations</h3>
+        <ul id="recommendationsList"></ul>
+      </div>
+    </div>
+
+    <script>
+      // ---- Charts ----
+      let admissionsTrendChart, rlcRegionChart, genderChart, qualificationChart, lowCompletionChart;
+      let eventPredictionChart, heatmapChart, bubbleChart;
+
+      const chartColors = ['#021640', '#0066CC', '#0099CC', '#4572C4', '#558ED5', '#1F4E79'];
+
+      // ---- Loader ----
+      function showLoading(show) {
+        document.getElementById('loadingOverlay').style.display = show ? 'flex' : 'none';
+      }
+
+      // ---- Debounce helper ----
+      let debounceTimer = null;
+      const debounce = (fn, delay=250) => (...args) => {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => fn(...args), delay);
+      };
+
+      // ---- Populate filters ----
+      function populateFilters(filterData) {
+        const fill = (id, label) => {
+          const el = document.getElementById(id);
+          el.innerHTML = `<option value="All">${label}</option>`;
+          return el;
+        };
+
+        const fy = fill('filterYear', 'All Years');
+        const fe = fill('filterExamEvent', 'All Exam Events');
+        const fr = fill('filterRlcRegion', 'All RLC Regions');
+        const fd = fill('filterLearnerDistrict', 'All Learner Districts');
+        const fg = fill('filterGender', 'All Genders');
+        const fq = fill('filterQualification', 'All Qualifications');
+        const fpe = fill('filterPredictionExamEvent', 'Select Exam Event for Prediction');
+
+        (filterData.years || []).forEach(v => fy.append(new Option(v, v)));
+        (filterData.examEvents || []).forEach(v => fe.append(new Option(v, v)));
+        (filterData.rlcRegions || []).forEach(v => fr.append(new Option(v, v)));
+        (filterData.learnerDistricts || []).forEach(v => fd.append(new Option(v, v)));
+        (filterData.genders || []).forEach(v => fg.append(new Option(v, v)));
+        (filterData.qualifications || []).forEach(v => fq.append(new Option(v, v)));
+        (filterData.examEvents || []).forEach(v => fpe.append(new Option(v, v)));
+
+        // Default some sensible values (optional):
+        document.getElementById('filterOverallTarget').value = '';
+        document.getElementById('filterExamDeadline').value = '';
+        document.getElementById('filterManualTarget').value = '';
+
+        // Set the prediction exam event to the first available if not 'All' to ensure a target is shown
+        if (filterData.examEvents && filterData.examEvents.length > 0) {
+            fpe.value = filterData.examEvents[0];
+        }
+
+        loadDashboardData();
+      }
+
+      function getSelectedFilters() {
+        return {
+          year: document.getElementById('filterYear').value || 'All',
+          examEvent: document.getElementById('filterExamEvent').value || 'All',
+          rlcRegion: document.getElementById('filterRlcRegion').value || 'All',
+          learnerDistrict: document.getElementById('filterLearnerDistrict').value || 'All',
+          gender: document.getElementById('filterGender').value || 'All',
+          qualification: document.getElementById('filterQualification').value || 'All',
+          overallTarget: Number(document.getElementById('filterOverallTarget').value) || 0,
+          examEventEndDate: document.getElementById('filterExamDeadline').value || '',
+          manualTarget: Number(document.getElementById('filterManualTarget').value) || 0,
+          selectedExamEvent: document.getElementById('filterPredictionExamEvent').value || ''
+        };
+      }
+
+      function updateKpiCards(kpis) {
+        const n = (v) => Number(v || 0).toLocaleString();
+        document.getElementById('kpiTotalAdmissions').textContent = n(kpis.totalAdmissions);
+        document.getElementById('kpiCompletionRate').textContent = kpis.completionRate;
+        document.getElementById('kpiAvgInternalMarks').textContent = kpis.avgInternalMarks;
+        document.getElementById('kpiAvgInternalScore').textContent = kpis.avgInternalScore;
+        document.getElementById('kpiOverallTarget').textContent = n(kpis.overallTarget || 0);
+
+        const pred = document.getElementById('kpiPredictedAdmissions');
+        pred.textContent = (kpis.predictedAdmissions === 'N/A') ? 'N/A' : n(kpis.predictedAdmissions);
+        if (kpis.onTrackWarning) {
+          pred.style.color = '#d9534f'; pred.title = 'Projected admissions are below 90% of target';
+        } else {
+          pred.style.color = ''; pred.title = '';
+        }
+      }
+
+      function updateAdmissionsStatusTable(rows) {
+        const tbody = document.getElementById('admissionsStatusTableBody');
+        tbody.innerHTML = '';
+        if (!rows || !rows.length) {
+          const tr = tbody.insertRow();
+          const td = tr.insertCell(); td.colSpan = 10; td.style.textAlign = 'center';
+          td.textContent = 'No data available for selected filters.';
+          return;
+        }
+        rows.forEach(r => {
+          const tr = tbody.insertRow();
+          tr.insertCell().textContent = r.year;
+          tr.insertCell().textContent = r.examEvent;
+          tr.insertCell().textContent = r.centerCode;
+          tr.insertCell().textContent = r.centerName;
+          tr.insertCell().textContent = Number(r.actualAdmissions || 0).toLocaleString();
+          tr.insertCell().textContent = (r.completionPct || '0.0') + '%';
+          tr.insertCell().textContent = r.avgInternalMarks;
+          tr.insertCell().textContent = r.avgInternalScore;
+          tr.insertCell().textContent = r.genderMix;
+          tr.insertCell().textContent = r.paymentStatusMix;
+        });
+      }
+
+      function renderCharts(cd) {
+        // Destroy old charts to avoid overlaps
+        [admissionsTrendChart, rlcRegionChart, genderChart, qualificationChart, lowCompletionChart,
+         eventPredictionChart, heatmapChart, bubbleChart]
+         .forEach(ch => ch && ch.destroy());
+
+        // 1) Trend
+        admissionsTrendChart = new ApexCharts(document.querySelector("#chartAdmissionsTrend"), {
+          chart: { type: 'line', height: 330, toolbar: { show: false } },
+          series: cd.admissionsTrend.series,
+          xaxis: { categories: cd.admissionsTrend.categories },
+          yaxis: { min: 0, title: { text: 'Unique Learner Code Count' } },
+          colors: [chartColors[0], chartColors[1]],
+          stroke: { curve: 'smooth' }
+        }); admissionsTrendChart.render();
+
+        // 2) RLC bar
+        rlcRegionChart = new ApexCharts(document.querySelector("#chartAdmissionsByRlcRegion"), {
+          chart: { type: 'bar', height: 330, toolbar: { show: false } },
+          series: [{ name: 'Admissions', data: (cd.admissionsByRlcRegion || []).map(d => d.y) }],
+          xaxis: { categories: (cd.admissionsByRlcRegion || []).map(d => d.x) },
+          yaxis: { min: 0, title: { text: 'Count of unique Learner Code' } },
+          colors: [chartColors[2]]
+        }); rlcRegionChart.render();
+
+        // 3) Gender pie
+        genderChart = new ApexCharts(document.querySelector("#chartGenderDistribution"), {
+          chart: { type: 'pie', height: 300, toolbar: { show: false } },
+          series: (cd.genderDistribution || []).map(d => d.y),
+          labels: (cd.genderDistribution || []).map(d => d.x),
+          colors: [chartColors[0], chartColors[1], chartColors[3]]
+        }); genderChart.render();
+
+        // 4) Qualification bar
+        qualificationChart = new ApexCharts(document.querySelector("#chartAdmissionsByQualification"), {
+          chart: { type: 'bar', height: 300, toolbar: { show: false } },
+          series: [{ name: 'Admissions', data: (cd.admissionsByQualification || []).map(d => d.y) }],
+          plotOptions: { bar: { horizontal: true } },
+          xaxis: { categories: (cd.admissionsByQualification || []).map(d => d.x), min: 0 },
+          colors: [chartColors[4]]
+        }); qualificationChart.render();
+
+        // 5) Low completion bar
+        lowCompletionChart = new ApexCharts(document.querySelector("#chartLowCompletionCenters"), {
+          chart: { type: 'bar', height: 330, toolbar: { show: false } },
+          series: [{ name: 'Completion %', data: (cd.lowCompletionCenters || []).map(d => d.y) }],
+          plotOptions: { bar: { horizontal: true } },
+          xaxis: { categories: (cd.lowCompletionCenters || []).map(d => d.x), min: 0, max: 100 },
+          colors: [chartColors[5]]
+        }); lowCompletionChart.render();
+
+        // 6) Exam event prediction (New Chart)
+        const currentYear = new Date().getFullYear();
+        eventPredictionChart = new ApexCharts(document.querySelector("#chartExamEventPrediction"), {
+          chart: {
+            type: 'bar',
+            height: 320,
+            toolbar: { show: false }
+          },
+          series: cd.examEventPrediction.series,
+          xaxis: {
+            categories: [`${currentYear - 2}`, `${currentYear - 1}`, `${currentYear}`],
+            title: { text: 'Year' }
+          },
+          yaxis: {
+            min: 0,
+            title: { text: 'Admissions Count' }
+          },
+          colors: [chartColors[0], chartColors[1], chartColors[2]],
+          annotations: {
+            yaxis: [
+              ...(cd.examEventPrediction.displayedTarget > 0 ? [{ // Use displayedTarget for the line
+                y: cd.examEventPrediction.displayedTarget,
+                borderColor: cd.examEventPrediction.manualTarget > 0 ? '#FF4560' : '#888', // Red for manual, grey for suggested
+                strokeDashArray: 5,
+                label: {
+                  borderColor: cd.examEventPrediction.manualTarget > 0 ? '#FF4560' : '#888',
+                  style: { color: '#fff', background: cd.examEventPrediction.manualTarget > 0 ? '#FF4560' : '#888' },
+                  text: `Target: ${cd.examEventPrediction.displayedTarget.toLocaleString()} ${cd.examEventPrediction.manualTarget > 0 ? '(Manual)' : '(Suggested)'}`,
+                  position: 'right'
+                }
+              }] : [])
+            ]
+          },
+          title: {
+            text: `Exam Event Prediction for ${getSelectedFilters().selectedExamEvent || 'Selected Event'}`,
+            align: 'left',
+            style: { fontSize: '14px', color: chartColors[0] }
+          },
+          subtitle: {
+            text: cd.examEventPrediction.targetAlert,
+            align: 'left',
+            style: { fontSize: '12px', color: '#FF4560' }
+          }
+        });
+        eventPredictionChart.render();
+
+        // 7) Heatmap (New Chart)
+        heatmapChart = new ApexCharts(document.querySelector("#chartAdmissionsHeatmap"), {
+          chart: { type: 'heatmap', height: 360, toolbar: { show: false } },
+          series: cd.admissionsHeatmap.series, // Directly use the series from code.gs
+          dataLabels: { enabled: true, style: { colors: ['#000'] } },
+          xaxis: {
+            type: 'category',
+            categories: cd.admissionsHeatmap.demoCategories, // Use collected demo categories for x-axis labels
+            title: { text: 'Demographic (Qualification)' }
+          },
+          yaxis: {
+            categories: cd.admissionsHeatmap.geoCategories, // Use collected geo categories for y-axis labels
+            title: { text: 'Geographic (RLC Region)' }
+          },
+          plotOptions: {
+              heatmap: {
+                  radius: 0,
+                  enableShades: true,
+                  shadeIntensity: 0.5,
+                  colorScale: {
+                      ranges: [{
+                          from: 0, to: 0, name: 'No Admissions', color: '#F3F4F6'
+                      }, {
+                          from: 1, to: 10, name: 'Low', color: '#e0f7fa'
+                      }, {
+                          from: 11, to: 50, name: 'Medium', color: '#80deea'
+                      }, {
+                          from: 51, to: 100, name: 'High', color: '#00bcd4'
+                      }, {
+                          from: 101, to: 99999, name: 'Very High', color: '#00838f'
+                      }]
+                  }
+              }
+          },
+          title: {
+            text: 'Admissions Heatmap by RLC Region and Qualification',
+            align: 'left',
+            style: { fontSize: '14px', color: chartColors[0] }
+          }
+        });
+        heatmapChart.render();
+
+        // 8) Bubble Chart (New Chart)
+        bubbleChart = new ApexCharts(document.querySelector("#chartBubbleCenters"), {
+          chart: {
+            type: 'bubble',
+            height: 360,
+            toolbar: { show: false }
+          },
+          series: cd.alcLlcBubbleChart,
+          dataLabels: { enabled: false },
+          xaxis: {
+            title: { text: 'Average Internal Score' },
+            min: 0,
+            labels: {
+              formatter: function (val) {
+                return parseFloat(val).toFixed(0);
+              }
+            }
+          },
+          yaxis: {
+            title: { text: 'Completion %' },
+            min: 0,
+            max: 100,
+            labels: {
+              formatter: function (val) {
+                return parseFloat(val).toFixed(0) + '%';
+              }
+            }
+          },
+          tooltip: {
+            y: {
+              formatter: (v) => `${v}%`
+            },
+            custom: ({ series, seriesIndex, dataPointIndex, w }) => {
+              const p = w.config.series[seriesIndex].data[dataPointIndex];
+              const centerName = w.config.series[seriesIndex].name;
+              return `<div style="padding: 8px; font-family: 'Roboto', sans-serif;">
+                        <strong>${centerName}</strong><br/>
+                        Avg Score: ${p.x}<br/>
+                        Completion: ${p.y}%<br/>
+                        Admissions: ${p.z.toLocaleString()}
+                      </div>`;
+            }
+          },
+          title: {
+            text: 'Center Performance: Completion vs. Avg Score (Bubble size = Admissions)',
+            align: 'left',
+            style: { fontSize: '14px', color: chartColors[0] }
+          }
+        });
+        bubbleChart.render();
+      }
+
+      function updateRecommendations(recs) {
+        const ul = document.getElementById('recommendationsList');
+        ul.innerHTML = '';
+        if (!recs || recs.length === 0) { // Check for empty or null/undefined array
+          const li = document.createElement('li');
+          li.textContent = 'No specific action recommendations at this time based on current filters.';
+          ul.appendChild(li);
+          return;
+        }
+        recs.forEach(t => { const li = document.createElement('li'); li.textContent = t; ul.appendChild(li); });
+      }
+
+      // ---- Core load flow ----
+      function loadDashboardData() {
+        showLoading(true);
+        const filters = getSelectedFilters();
+        google.script.run
+          .withSuccessHandler((data) => {
+            try {
+              updateKpiCards(data.kpis || {});
+              updateAdmissionsStatusTable(data.tableData || []);
+              renderCharts(data.chartData || {});
+              updateRecommendations(data.recommendations || []);
+            } catch (e) {
+              console.error('Render error:', e);
+              alert('Render error: ' + e.message);
+            } finally {
+              showLoading(false);
+            }
+          })
+          .withFailureHandler(showError)
+          .getDataForDashboard(filters);
+      }
+
+      function showError(error) {
+        console.error('Dashboard Error:', error);
+        showLoading(false);
+        const msg = (error && error.message) ? error.message : JSON.stringify(error);
+        alert('Dashboard failed to load: ' + msg);
+      }
+
+      // ---- Init ----
+      document.addEventListener('DOMContentLoaded', () => {
+        // attach debounced change listeners
+        ['filterYear','filterExamEvent','filterRlcRegion','filterLearnerDistrict','filterGender','filterQualification',
+         'filterOverallTarget','filterExamDeadline',
+         'filterPredictionExamEvent', 'filterManualTarget']
+         .forEach(id => {
+          document.getElementById(id).addEventListener('change', debounce(loadDashboardData, 250));
+        });
+
+        // initial fetch of filters
+        showLoading(true);
+        google.script.run
+          .withSuccessHandler((filterData) => {
+            try {
+              populateFilters(filterData || {});
+            } catch (e){
+              showError(e);
+            }
+          })
+          .withFailureHandler(showError)
+          .getUniqueFilterValues();
+      });
+    </script>
+  </body>
+</html>
