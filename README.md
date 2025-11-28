@@ -1,4 +1,4 @@
-Real-time Performance BI Dashboard
+#Real-time Performance BI Dashboard
 
 Tech: Google Apps Script, Sheets, JavaScript, ApexCharts
 Role: Full Stack Dashboard Developer & Data Strategist
